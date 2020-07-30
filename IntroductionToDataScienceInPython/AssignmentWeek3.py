@@ -37,7 +37,7 @@ def answer_one():
     # Convert Energy Supply to gigajoules (there are 1,000,000 gigajoules in a petajoule).
     energyDf["Energy Supply"] = energyDf["Energy Supply"] * 1000000
 
-    GDPdf = pd.read_csv("data/world_bank.csv", skiprows = 4)
+    GDPdf = pd.read_csv("data/world_bank.csv", skiprows=4)
     GDPdf.replace({"Korea, Rep." : "South Korea",
                    "Iran, Islamic Rep." : "Iran",
                    "Hong Kong SAR, China" : "Hong Kong"},
@@ -171,10 +171,9 @@ def answer_eight():
     # What is the third most populous country according to this estimate?
     # This function should return a single string value.
     Top15 = answer_one()
-    Top15["myPopul"] = Top15["Energy Supply"] / Top15["Energy/Capita"]
-    # print(Top15.sort_values(by = "myPopul", ascending = False)["myPopul"])
-    maxPopul = Top15.reset_index().sort_values(by = "myPopul", ascending = False).iloc[2]
-    return maxPopul[0]
+    Top15["myPopul"] = Top15["Energy Supply"] / Top15["Energy Supply per Capita"]
+    maxPopul3rd = Top15.reset_index().sort_values(by = "myPopul", ascending = False).iloc[2]
+    return maxPopul3rd[0]
 
 def answer_nine():
     # Create a column that estimates the number of citable documents per person.
@@ -182,10 +181,10 @@ def answer_nine():
     # Use the .corr() method, (Pearson's correlation).
     # This function should return a single number.
     Top15 = answer_one()
-    Top15["Citable/Capita"] = (Top15["Energy Supply"] / Top15["Energy/Capita"]) / Top15["Citable documents"]
+    Top15["Citable/Capita"] = Top15["Citable documents"] / (Top15["Energy Supply"] / Top15["Energy Supply per Capita"])
     Top15["Citable/Capita"] = Top15["Citable/Capita"].astype(float)
-    Top15["Energy/Capita"] = Top15["Energy/Capita"].astype(float)
-    return Top15["Citable/Capita"].corr(Top15["Energy/Capita"], method = 'pearson')
+    Top15["Energy Supply per Capita"] = Top15["Energy Supply per Capita"].astype(float)
+    return Top15["Citable/Capita"].corr(Top15["Energy Supply per Capita"], method = 'pearson')
 
 def answer_ten():
     # Create a new column with a 1 if the country's % Renewable value is at or above the median
@@ -196,10 +195,7 @@ def answer_ten():
     Top15["HighRenew"] = 1
     med = Top15["% Renewable"].median()
     Top15["HighRenew"][Top15["% Renewable"] < med] = 0
-    # Top15["HighRenew"][Top15["% Renewable"] == np.nan] = np.nan
     Top15.sort_values(by = ["Rank"], ascending = True, inplace = True)
-    # print(Top15[["% Renewable", "HighRenew"]])
-    # print("\n\n",Top15[["% Renewable", "HighRenew"]].sort_values(by = ["% Renewable"], ascending=True), med)
     return Top15["HighRenew"]
 
 def answer_eleven():
@@ -224,13 +220,13 @@ def answer_eleven():
     # *This function should return a DataFrame with index named Continent
     # `['Asia', 'Australia', 'Europe', 'North America', 'South America']` and columns `['size', 'sum', 'mean', 'std']`
     Top15 = answer_one().dropna()
+    SaveOnFile(Top15)
     Top15["Continent"] = Top15.index
     Top15["Continent"].replace(ContinentDict, inplace = True)
-    Top15["myPopul"] = Top15["Energy Supply"] / Top15["Energy/Capita"]
+    Top15["myPopul"] = Top15["Energy Supply"] / Top15["Energy Supply per Capita"]
     Cont15 = Top15[["Continent", "myPopul"]]
     Cont15["myPopul"] = Cont15["myPopul"].astype(int)
-
-    return Cont15.set_index("Continent").groupby(level=0)["myPopul"].agg({"size" : np.size, "sum" : np.sum, "mean" : np.mean, "std" : np.std})
+    return Cont15.set_index("Continent").groupby(level=0)["myPopul"].agg(size = "size", sum = "sum", mean = "mean", std = "std")
 
 def answer_twelve():
     # Cut % Renewable into 5 bins. Group Top15 by the Continent, as well as these new % Renewable bins.
@@ -267,81 +263,24 @@ def answer_thirteen(Top15):
     # the population estimate string.*
     return "ANSWER"
 
-if __name__ == '__main__':
-    # Load the energy data from the file Energy Indicators.xls, which is a list of indicators of energy supply and
-    # renewable electricity production from the United Nations for the year 2013, and should be put into a DataFrame
-    # with the variable name of energy.
-    # Keep in mind that this is an Excel file, and not a comma separated values file. Also, make sure to exclude
-    # the footer and header information from the datafile. The first two columns are unneccessary, so you should
-    # get rid of them, and you should change the column labels so that the columns are:
-    # ['Country', 'Energy Supply', 'Energy Supply per Capita', '% Renewable']
-    #
-    # energyDf = pd.read_excel("data/EnergyIndicators.xls", skiprows = 17)
-    # columnsToKeep = ["Country", "Energy Supply", "Energy/Capita", "% Renewable"]
-    # energyDf.columns = ["Del0", "Del1"] + columnsToKeep
-    # energyDf = energyDf[columnsToKeep]
-    # energyDf = energyDf.iloc[:227]
-    #
-    # # Convert Energy Supply to gigajoules (there are 1,000,000 gigajoules in a petajoule).
-    # energyDf["Energy Supply"] = energyDf["Energy Supply"] * 1000000
-    #
-    # # There are also several countries with numbers and/or parenthesis in their name. Be sure to remove these,
-    # # e.g.
-    # # 'Bolivia (Plurinational State of)' should be 'Bolivia',
-    # # 'Switzerland17' should be 'Switzerland'.
-    # for ind, row in energyDf.iterrows():
-    #     s1 = energyDf.iloc[ind, 0]
-    #     s2 = ''.join([i for i in s1 if not i.isdigit()])
-    #     energyDf.iloc[ind, 0] = re.sub(r"[\(\[].*?[\)\]]", "", s2)
-    #
-    # # For all countries which have missing data (e.g. data with "...") make sure this is reflected as np.NaN values.
-    # energyDf = energyDf.replace(r'^[.]', np.nan)
-    #
-    # # Rename the following list of countries (for use in later questions):
-    # # "Republic of Korea": "South Korea",
-    # # "United States of America": "United States",
-    # # "United Kingdom of Great Britain and Northern Ireland": "United Kingdom",
-    # # "China, Hong Kong Special Administrative Region": "Hong Kong"
-    # energyDf.replace({"Republic of Korea": "South Korea",
-    #                   "United States of America" : "United States",
-    #                   "United Kingdom of Great Britain and Northern Ireland" : "United Kingdom"}, inplace = True)
-    # energyDf.replace("China, Hong Kong Special Administrative Region", "Hong Kong", inplace = True)
-    # # print("England \n",energyDf[energyDf["Country"] == "United Kingdom"]);sys.exit()
-    #
-    # # print("energyDf\n----------\n",energyDf.head(5))
-    #
-    #
-    # # Next, load the GDP data from the file world_bank.csv, which is a csv containing countries' GDP from 1960 to 2015
-    # # from World Bank. Call this DataFrame GDP.Make sure to skip the header, and rename the following list of countries:
-    # # "Korea, Rep.": "South Korea",
-    # # "Iran, Islamic Rep.": "Iran",
-    # # "Hong Kong SAR, China": "Hong Kong"
-    # GDPdf = pd.read_csv("data/world_bank.csv", skiprows = 4)
-    # GDPdf = GDPdf.replace("Korea, Rep.", "South Korea")
-    # GDPdf = GDPdf.replace("Iran, Islamic Rep.", "Iran")
-    # GDPdf = GDPdf.replace("Hong Kong SAR, China", "Hong Kong")
-    # # Use only the last 10 years (2006-2015) of GDP data
-    # GDPcolumnsToKeep = ["Country Name", "Country Code", "2006", "2007", "2008", "2009", '2010', '2011',
-    # '2012', '2013', '2014', '2015']
-    # GDPdf = GDPdf[GDPcolumnsToKeep]
-    # # print("GDPdf\n-----------\n",GDPdf.head(5))
-    #
-    # # Finally, load the Sciamgo Journal and Country Rank data for Energy Engineering and Power Technology from the
-    # # file scimagojr-3.xlsx, which ranks countries based on their journal contributions in the aforementioned area.
-    # # Call this DataFrame ScimEn.
-    # ScimEnDf = pd.read_excel("data/scimagojr-3.xlsx")
-    # print("ScimEnDf\n--------------\n",ScimEnDf)
+def SaveOnFile(dFrame) :
+    writer = pd.ExcelWriter('pandasEx.xlsx',
+                            engine='xlsxwriter')
 
+    dFrame.to_excel(writer, sheet_name ='Sheet1')           #("data/scimagojr-3.xlsx")
+    writer.save()
+
+if __name__ == '__main__':
     Top15 = answer_one()
-    print("\nAnswer 1 :\n---------\n",answer_one())
-    print("\nAnswer 2 :\n---------\n",answer_two())
-    print("\nAnswer 3 :\n---------\n",answer_three())
-    print("\nAnswer 4 :", answer_four(), "\n-------------------------")
-    print("\nAnswer 5 :", answer_five(), "\n------------------------")
+    # print("\nAnswer 1 :\n---------\n",answer_one())
+    # print("\nAnswer 2 :\n---------\n",answer_two())
+    # print("\nAnswer 3 :\n---------\n",answer_three())
+    # print("\nAnswer 4 :", answer_four(), "\n-------------------------")
+    # print("\nAnswer 5 :", answer_five(), "\n------------------------")
     # print("\nAnswer 6 :", answer_six(), "\n------------------------")
     # print("\nAnswer 7 :", answer_seven(), "\n------------------------")
     # print("\nAnswer 8 :", answer_eight(), "\n------------------------")
     # print("\nAnswer 9 :", answer_nine(), "\n------------------------")
     # print("\nAnswer 10 :", "\n------------------------\n", answer_ten())
-    # print("\nAnswer 11 :", "\n------------------------\n", answer_eleven())
+    print("\nAnswer 11 :", "\n------------------------\n", answer_eleven())
     # print("\nAnswer 12 :", "\n------------------------\n", answer_twelve())
